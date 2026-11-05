@@ -7,7 +7,7 @@ Co robi ten skrypt:
 3. Wysyła do modelu jedno pytanie i drukuje odpowiedź.
 
 Uruchomienie (w aktywnym środowisku .venv):
-    python krok1_test.py
+    python steps/krok1_test.py
 """
 
 import os

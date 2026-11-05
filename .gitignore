@@ -3,3 +3,4 @@
 .venv-1/
 __pycache__/
 .DS_Store
+.pytest_cache/

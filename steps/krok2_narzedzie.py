@@ -10,7 +10,7 @@ Co robi ten skrypt:
 To jest cały "sekret" agentów: model decyduje, nasz kod wykonuje.
 
 Uruchomienie (w aktywnym środowisku .venv-1):
-    python krok2_narzedzie.py
+    python steps/krok2_narzedzie.py
 """
 
 import os
@@ -27,9 +27,9 @@ from google.genai import types
 # Konkretna wersja modelu (nie alias "latest"), żeby wyniki były powtarzalne.
 MODEL = "gemini-3.1-flash-lite"
 
-# Ścieżka do bazy liczona względem tego pliku, więc działa niezależnie od tego,
-# z którego folderu uruchomisz skrypt.
-DB_PATH = Path(__file__).parent / "data" / "chinook.db"
+# Ścieżka do bazy liczona względem tego pliku (plik leży w steps/, baza w data/),
+# więc działa niezależnie od tego, z którego folderu uruchomisz skrypt.
+DB_PATH = Path(__file__).parent.parent / "data" / "chinook.db"
 
 load_dotenv()
 api_key = os.getenv("GEMINI_API_KEY")
