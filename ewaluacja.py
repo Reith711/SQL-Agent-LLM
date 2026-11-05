@@ -18,12 +18,17 @@ naprawdę wychodzą z bazy. To "test testów": błąd w zestawie pytań wyjdzie,
 zanim zmarnujemy limit API.
 
 Uruchomienie (w aktywnym środowisku .venv-1):
-    python ewaluacja.py                         # model ustawiony w agent.py
-    python ewaluacja.py gemini-2.5-flash-lite   # porównanie z innym modelem
+    python ewaluacja.py                    # tryb "narzędzia", model z agent.py
+    python ewaluacja.py --schemat          # tryb "schemat" (schemat w prompcie)
+    python ewaluacja.py --poziom trudne    # tylko wybrany poziom (oszczędza limit)
+    python ewaluacja.py --model gemini-2.5-flash-lite   # inny model
+    python ewaluacja.py --przerwa 6        # własna przerwa między pytaniami
+    python ewaluacja.py --id 21 27         # tylko wybrane pytania (np. powtórka)
 
 Wyniki zapisują się w eval/wyniki/ jako plik JSON.
 """
 
+import argparse
 import json
 import re
 import sqlite3
@@ -41,9 +46,11 @@ KATALOG = Path(__file__).parent
 PLIK_PYTAN = KATALOG / "eval" / "pytania.json"
 KATALOG_WYNIKOW = KATALOG / "eval" / "wyniki"
 
-# Przerwa między pytaniami. Darmowy plan ma limit zapytań na minutę,
-# a jedno pytanie to zwykle 3-5 zapytań do modelu.
-PRZERWA_S = 10
+# Domyślna przerwa między pytaniami. Darmowy plan ma limit zapytań na minutę.
+# W trybie "narzędzia" jedno pytanie to 3-5 zapytań do modelu, w trybie
+# "schemat" zwykle 1-2, więc tam przerwa może być krótsza.
+PRZERWA_NARZEDZIA_S = 10
+PRZERWA_SCHEMAT_S = 4
 
 # Ile może różnić się liczba w odpowiedzi od oczekiwanej (zaokrąglenia).
 TOLERANCJA = 0.006
@@ -103,17 +110,37 @@ def sprawdz_zestaw_pytan(pytania: list) -> bool:
 # Część 3: przebieg ewaluacji
 # =============================================================================
 def main() -> None:
-    if len(sys.argv) > 1:
-        # agent.zapytaj_agenta czyta agent.MODEL przy każdym wywołaniu,
-        # więc podmiana tutaj zmienia model dla całej ewaluacji.
-        agent.MODEL = sys.argv[1]
+    parser = argparse.ArgumentParser(description="Ewaluacja agenta SQL")
+    parser.add_argument("--model", help="nazwa modelu (domyślnie z agent.py)")
+    parser.add_argument("--schemat", action="store_true",
+                        help="tryb 'schemat': opis bazy w prompcie zamiast odkrywania narzędziami")
+    parser.add_argument("--poziom", help="uruchom tylko pytania z tego poziomu, np. trudne")
+    parser.add_argument("--przerwa", type=float, help="przerwa między pytaniami w sekundach")
+    parser.add_argument("--id", type=int, nargs="+", help="uruchom tylko pytania o tych numerach")
+    args = parser.parse_args()
+
+    # agent.zapytaj_agenta czyta te ustawienia przy każdym wywołaniu,
+    # więc podmiana tutaj zmienia je dla całej ewaluacji.
+    if args.model:
+        agent.MODEL = args.model
+    agent.SCHEMAT_W_PROMPCIE = args.schemat
+    tryb = "schemat" if args.schemat else "narzedzia"
+    przerwa = args.przerwa if args.przerwa is not None else (
+        PRZERWA_SCHEMAT_S if args.schemat else PRZERWA_NARZEDZIA_S
+    )
 
     pytania = json.loads(PLIK_PYTAN.read_text(encoding="utf-8"))
+    if args.poziom:
+        pytania = [p for p in pytania if p["poziom"] == args.poziom]
+        if not pytania:
+            sys.exit(f"Brak pytań z poziomu '{args.poziom}'.")
+    if args.id:
+        pytania = [p for p in pytania if p["id"] in args.id]
 
     print("Sprawdzam zestaw pytań na bazie...")
     if not sprawdz_zestaw_pytan(pytania):
         sys.exit("Zestaw pytań ma błędy - popraw eval/pytania.json.")
-    print(f"OK. Start ewaluacji: {len(pytania)} pytań, model {agent.MODEL}\n")
+    print(f"OK. Start ewaluacji: {len(pytania)} pytań, model {agent.MODEL}, tryb {tryb}\n")
 
     wyniki = []
     start = time.time()
@@ -121,11 +148,13 @@ def main() -> None:
     for numer, p in enumerate(pytania, start=1):
         print(f"[{numer:>2}/{len(pytania)}] ({p['poziom']}) {p['pytanie']}")
         t0 = time.time()
+        blad_api = False
         try:
             odp = agent.zapytaj_agenta(p["pytanie"], pokazuj_kroki=False)
         except errors.APIError as blad:
-            # Błąd API to nie wina agenta, ale liczymy go jako porażkę,
-            # bo użytkownik i tak nie dostałby odpowiedzi.
+            # Błąd API (np. limit) to nie pomyłka agenta, tylko brak odpowiedzi.
+            # Liczymy go osobno, żeby nie zaniżać oceny jakości agenta.
+            blad_api = True
             odp = {"odpowiedz": f"BŁĄD API {blad.code}", "kroki": [], "sql": [],
                    "tokeny_wejscie": 0, "tokeny_wyjscie": 0}
 
@@ -136,15 +165,17 @@ def main() -> None:
             if k["narzedzie"] == "run_query" and isinstance(k["wynik"], dict) and "error" in k["wynik"]
         )
 
-        print(f"        {'✅ poprawna' if ok else '❌ błędna'}  "
+        status = "⚠️  błąd API" if blad_api else ("✅ poprawna" if ok else "❌ błędna")
+        print(f"        {status}  "
               f"(kroki: {len(odp['kroki'])}, błędy SQL: {bledy_sql}, {time.time() - t0:.1f} s)")
-        if not ok:
+        if not ok and not blad_api:
             print(f"        brakuje: {brakuje}")
             print(f"        odpowiedź: {odp['odpowiedz'][:200]}")
 
         wyniki.append({
             **p,
             "poprawna": ok,
+            "blad_api": blad_api,
             "brakuje": brakuje,
             "odpowiedz": odp["odpowiedz"],
             "sql_agenta": odp["sql"],
@@ -155,17 +186,23 @@ def main() -> None:
         })
 
         if numer < len(pytania):
-            time.sleep(PRZERWA_S)
+            time.sleep(przerwa)
 
     # --- Podsumowanie ---------------------------------------------------------
     n = len(wyniki)
     poprawne = sum(w["poprawna"] for w in wyniki)
+    bledy_api = sum(w["blad_api"] for w in wyniki)
+    ocenione = n - bledy_api  # pytania, na które agent faktycznie odpowiedział
     podsumowanie = {
         "model": agent.MODEL,
+        "tryb": tryb,
+        "poziom": args.poziom or "wszystkie",
         "data": datetime.now().isoformat(timespec="seconds"),
         "poprawne": poprawne,
         "wszystkie": n,
         "skutecznosc_proc": round(100 * poprawne / n, 1),
+        "bledy_api": bledy_api,
+        "skutecznosc_bez_bledow_api_proc": round(100 * poprawne / ocenione, 1) if ocenione else None,
         "wedlug_poziomu": {},
         "srednio_krokow": round(sum(w["kroki"] for w in wyniki) / n, 1),
         "srednio_tokenow_wejscie": round(sum(w["tokeny_wejscie"] for w in wyniki) / n),
@@ -178,15 +215,19 @@ def main() -> None:
         podsumowanie["wedlug_poziomu"][poziom] = f"{sum(w['poprawna'] for w in grupa)}/{len(grupa)}"
 
     print("\n" + "=" * 60)
-    print(f"WYNIK: {poprawne}/{n} poprawnych ({podsumowanie['skutecznosc_proc']}%)  model: {agent.MODEL}")
+    print(f"WYNIK: {poprawne}/{n} poprawnych ({podsumowanie['skutecznosc_proc']}%)  "
+          f"model: {agent.MODEL}, tryb: {tryb}")
+    if bledy_api:
+        print(f"Błędy API: {bledy_api}. Bez nich: {poprawne}/{ocenione} "
+              f"({podsumowanie['skutecznosc_bez_bledow_api_proc']}%) - powtórz je opcją --id")
     print(f"Według poziomu: {podsumowanie['wedlug_poziomu']}")
-    print(f"Średnio: {podsumowanie['srednio_krokow']} kroków, "
+    print(f"Czas: {podsumowanie['czas_s']} s.  Średnio: {podsumowanie['srednio_krokow']} kroków, "
           f"{podsumowanie['srednio_tokenow_wejscie']} tokenów wejściowych na pytanie")
     print(f"Pytania, w których agent sam naprawił błąd SQL: {podsumowanie['pytania_z_samonaprawa_sql']}")
     print("=" * 60)
 
     KATALOG_WYNIKOW.mkdir(parents=True, exist_ok=True)
-    nazwa = f"eval_{agent.MODEL}_{datetime.now():%Y%m%d-%H%M}.json"
+    nazwa = f"eval_{agent.MODEL}_{tryb}_{datetime.now():%Y%m%d-%H%M}.json"
     (KATALOG_WYNIKOW / nazwa).write_text(
         json.dumps({"podsumowanie": podsumowanie, "wyniki": wyniki}, ensure_ascii=False, indent=2),
         encoding="utf-8",

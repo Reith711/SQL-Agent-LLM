@@ -1,0 +1,73 @@
+{
+  "podsumowanie": {
+    "model": "gemini-3.1-flash-lite",
+    "tryb": "narzedzia",
+    "poziom": "wszystkie",
+    "data": "2026-11-05T16:55:45",
+    "poprawne": 2,
+    "wszystkie": 2,
+    "skutecznosc_proc": 100.0,
+    "bledy_api": 0,
+    "skutecznosc_bez_bledow_api_proc": 100.0,
+    "wedlug_poziomu": {
+      "trudne": "1/1",
+      "nietypowe": "1/1"
+    },
+    "srednio_krokow": 6.0,
+    "srednio_tokenow_wejscie": 9396,
+    "srednio_tokenow_wyjscie": 184,
+    "pytania_z_samonaprawa_sql": 0,
+    "czas_s": 25
+  },
+  "wyniki": [
+    {
+      "id": 21,
+      "poziom": "trudne",
+      "pytanie": "Ile utworów z gatunku Rock kupili łącznie klienci z Kanady?",
+      "oczekiwane": [
+        107
+      ],
+      "sql_wzorcowe": "SELECT SUM(il.Quantity) FROM InvoiceLine il JOIN Invoice i ON il.InvoiceId = i.InvoiceId JOIN Customer c ON i.CustomerId = c.CustomerId JOIN Track t ON il.TrackId = t.TrackId JOIN Genre g ON t.GenreId = g.GenreId WHERE g.Name = 'Rock' AND c.Country = 'Canada'",
+      "poprawna": true,
+      "blad_api": false,
+      "brakuje": [],
+      "odpowiedz": "Klienci z Kanady kupili łącznie 107 utworów z gatunku Rock.",
+      "sql_agenta": [
+        "SELECT SUM(il.Quantity)\nFROM InvoiceLine il\nJOIN Invoice i ON il.InvoiceId = i.InvoiceId\nJOIN Customer c ON i.CustomerId = c.CustomerId\nJOIN Track t ON il.TrackId = t.TrackId\nJOIN Genre g ON t.GenreId = g.GenreId\nWHERE c.Country = 'Canada' AND g.Name = 'Rock';"
+      ],
+      "kroki": 7,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 12930,
+      "tokeny_wyjscie": 220
+    },
+    {
+      "id": 27,
+      "poziom": "nietypowe",
+      "pytanie": "Ile faktur wystawiono w 2014 roku?",
+      "oczekiwane": [
+        [
+          0,
+          "brak",
+          "nie ma",
+          "żadn",
+          "nie wystawiono",
+          "nie odnotowano"
+        ]
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2014'",
+      "poprawna": true,
+      "blad_api": false,
+      "brakuje": [],
+      "odpowiedz": "W 2014 roku nie wystawiono żadnych faktur. Ostatnie faktury w bazie pochodzą z 2013 roku.",
+      "sql_agenta": [
+        "SELECT COUNT(*) FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2014'",
+        "SELECT InvoiceDate FROM Invoice LIMIT 10",
+        "SELECT DISTINCT strftime('%Y', InvoiceDate) FROM Invoice"
+      ],
+      "kroki": 5,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 5861,
+      "tokeny_wyjscie": 148
+    }
+  ]
+}

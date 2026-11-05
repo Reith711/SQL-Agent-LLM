@@ -1,0 +1,570 @@
+{
+  "podsumowanie": {
+    "model": "gemini-3.1-flash-lite",
+    "tryb": "schemat",
+    "poziom": "wszystkie",
+    "data": "2026-11-05T16:43:51",
+    "poprawne": 26,
+    "wszystkie": 27,
+    "skutecznosc_proc": 96.3,
+    "wedlug_poziomu": {
+      "łatwe": "6/6",
+      "średnie": "6/6",
+      "trudne": "9/10",
+      "nietypowe": "5/5"
+    },
+    "srednio_krokow": 1.0,
+    "srednio_tokenow_wejscie": 3230,
+    "srednio_tokenow_wyjscie": 78,
+    "pytania_z_samonaprawa_sql": 0,
+    "czas_s": 247
+  },
+  "wyniki": [
+    {
+      "id": 1,
+      "poziom": "łatwe",
+      "pytanie": "Ilu jest klientów w bazie?",
+      "oczekiwane": [
+        59
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Customer",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "W bazie jest 59 klientów.",
+      "sql_agenta": [
+        "SELECT count(*) FROM Customer"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3169,
+      "tokeny_wyjscie": 29
+    },
+    {
+      "id": 2,
+      "poziom": "łatwe",
+      "pytanie": "Ile utworów jest w bazie?",
+      "oczekiwane": [
+        3503
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Track",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "W bazie znajduje się 3503 utwory.",
+      "sql_agenta": [
+        "SELECT count(*) FROM Track"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3169,
+      "tokeny_wyjscie": 33
+    },
+    {
+      "id": 3,
+      "poziom": "łatwe",
+      "pytanie": "Ilu klientów pochodzi z Brazylii?",
+      "oczekiwane": [
+        5
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Customer WHERE Country = 'Brazil'",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Z Brazylii pochodzi 5 klientów.",
+      "sql_agenta": [
+        "SELECT COUNT(*) FROM Customer WHERE Country = 'Brazil'"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3180,
+      "tokeny_wyjscie": 37
+    },
+    {
+      "id": 4,
+      "poziom": "łatwe",
+      "pytanie": "Jaki jest łączny przychód ze wszystkich faktur?",
+      "oczekiwane": [
+        2328.6
+      ],
+      "sql_wzorcowe": "SELECT ROUND(SUM(Total), 2) FROM Invoice",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Łączny przychód ze wszystkich faktur wynosi 2328,60.",
+      "sql_agenta": [
+        "SELECT SUM(Total) FROM Invoice"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3187,
+      "tokeny_wyjscie": 42
+    },
+    {
+      "id": 5,
+      "poziom": "łatwe",
+      "pytanie": "Jaka jest średnia wartość faktury? Podaj wynik z dokładnością do dwóch miejsc po przecinku.",
+      "oczekiwane": [
+        5.65
+      ],
+      "sql_wzorcowe": "SELECT ROUND(AVG(Total), 2) FROM Invoice",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Średnia wartość faktury wynosi 5,65.",
+      "sql_agenta": [
+        "SELECT ROUND(AVG(Total), 2) AS SredniaWartoscFaktury FROM Invoice;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3224,
+      "tokeny_wyjscie": 51
+    },
+    {
+      "id": 6,
+      "poziom": "łatwe",
+      "pytanie": "Jak nazywa się najdłuższy utwór w bazie?",
+      "oczekiwane": [
+        "Occupation / Precipice"
+      ],
+      "sql_wzorcowe": "SELECT Name FROM Track ORDER BY Milliseconds DESC LIMIT 1",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Najdłuższym utworem w bazie jest „Occupation / Precipice”, który trwa 5 286 953 milisekund (około 88 minut).",
+      "sql_agenta": [
+        "SELECT Name, Milliseconds FROM Track ORDER BY Milliseconds DESC LIMIT 1;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3205,
+      "tokeny_wyjscie": 71
+    },
+    {
+      "id": 7,
+      "poziom": "średnie",
+      "pytanie": "Który artysta ma najwięcej albumów i ile ich ma?",
+      "oczekiwane": [
+        "Iron Maiden",
+        21
+      ],
+      "sql_wzorcowe": "SELECT ar.Name, COUNT(*) AS n FROM Album al JOIN Artist ar ON al.ArtistId = ar.ArtistId GROUP BY ar.ArtistId ORDER BY n DESC LIMIT 1",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Artystą z największą liczbą albumów jest Iron Maiden, który posiada ich 21.",
+      "sql_agenta": [
+        "SELECT a.Name, COUNT(al.AlbumId) AS AlbumCount\nFROM Artist a\nJOIN Album al ON a.ArtistId = al.ArtistId\nGROUP BY a.ArtistId\nORDER BY AlbumCount DESC\nLIMIT 1;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3238,
+      "tokeny_wyjscie": 87
+    },
+    {
+      "id": 8,
+      "poziom": "średnie",
+      "pytanie": "Ile utworów należy do gatunku Jazz?",
+      "oczekiwane": [
+        130
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Track t JOIN Genre g ON t.GenreId = g.GenreId WHERE g.Name = 'Jazz'",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Do gatunku Jazz należy 130 utworów.",
+      "sql_agenta": [
+        "SELECT count(*) FROM Track WHERE GenreId = (SELECT GenreId FROM Genre WHERE Name = 'Jazz')"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3188,
+      "tokeny_wyjscie": 48
+    },
+    {
+      "id": 9,
+      "poziom": "średnie",
+      "pytanie": "Jaka była łączna wartość faktur wystawionych w 2011 roku?",
+      "oczekiwane": [
+        469.58
+      ],
+      "sql_wzorcowe": "SELECT ROUND(SUM(Total), 2) FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2011'",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Łączna wartość faktur wystawionych w 2011 roku wyniosła 469,58.",
+      "sql_agenta": [
+        "SELECT SUM(Total) FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2011'"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3215,
+      "tokeny_wyjscie": 65
+    },
+    {
+      "id": 10,
+      "poziom": "średnie",
+      "pytanie": "Który kraj wygenerował największy przychód i ile on wyniósł?",
+      "oczekiwane": [
+        [
+          "USA",
+          "Stany Zjednoczone",
+          "United States"
+        ],
+        523.06
+      ],
+      "sql_wzorcowe": "SELECT BillingCountry, ROUND(SUM(Total), 2) AS s FROM Invoice GROUP BY BillingCountry ORDER BY s DESC LIMIT 1",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Największy przychód wygenerowały Stany Zjednoczone (USA) i wyniósł on 523,06.",
+      "sql_agenta": [
+        "SELECT BillingCountry, SUM(Total) AS TotalRevenue FROM Invoice GROUP BY BillingCountry ORDER BY TotalRevenue DESC LIMIT 1"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3224,
+      "tokeny_wyjscie": 71
+    },
+    {
+      "id": 11,
+      "poziom": "średnie",
+      "pytanie": "Którzy 3 klienci wydali najwięcej pieniędzy?",
+      "oczekiwane": [
+        "Helena Holý",
+        "Richard Cunningham",
+        "Luis Rojas"
+      ],
+      "sql_wzorcowe": "SELECT c.FirstName || ' ' || c.LastName, ROUND(SUM(i.Total), 2) AS s FROM Customer c JOIN Invoice i ON c.CustomerId = i.CustomerId GROUP BY c.CustomerId ORDER BY s DESC LIMIT 3",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Trzej klienci, którzy wydali najwięcej pieniędzy, to:\n\n1. **Helena Holý**: 49,62\n2. **Richard Cunningham**: 47,62\n3. **Luis Rojas**: 46,62",
+      "sql_agenta": [
+        "SELECT c.FirstName, c.LastName, SUM(i.Total) as TotalSpent\nFROM Customer c\nJOIN Invoice i ON c.CustomerId = i.CustomerId\nGROUP BY c.CustomerId\nORDER BY TotalSpent DESC\nLIMIT 3;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3280,
+      "tokeny_wyjscie": 123
+    },
+    {
+      "id": 12,
+      "poziom": "średnie",
+      "pytanie": "Który pracownik obsługi klienta ma przypisanych najwięcej klientów i ilu?",
+      "oczekiwane": [
+        "Jane Peacock",
+        21
+      ],
+      "sql_wzorcowe": "SELECT e.FirstName || ' ' || e.LastName, COUNT(*) AS n FROM Customer c JOIN Employee e ON c.SupportRepId = e.EmployeeId GROUP BY e.EmployeeId ORDER BY n DESC LIMIT 1",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Pracownikiem obsługi klienta z największą liczbą przypisanych klientów jest Jane Peacock, która opiekuje się 21 klientami.",
+      "sql_agenta": [
+        "SELECT e.FirstName, e.LastName, COUNT(c.CustomerId) as CustomerCount \nFROM Employee e \nJOIN Customer c ON e.EmployeeId = c.SupportRepId \nGROUP BY e.EmployeeId \nORDER BY CustomerCount DESC \nLIMIT 1;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3267,
+      "tokeny_wyjscie": 108
+    },
+    {
+      "id": 13,
+      "poziom": "trudne",
+      "pytanie": "Który gatunek muzyczny przyniósł największy przychód ze sprzedaży utworów i ile on wyniósł?",
+      "oczekiwane": [
+        "Rock",
+        826.65
+      ],
+      "sql_wzorcowe": "SELECT g.Name, ROUND(SUM(il.UnitPrice * il.Quantity), 2) AS s FROM InvoiceLine il JOIN Track t ON il.TrackId = t.TrackId JOIN Genre g ON t.GenreId = g.GenreId GROUP BY g.GenreId ORDER BY s DESC LIMIT 1",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Największy przychód przyniósł gatunek **Rock**, a jego łączna wartość wyniosła **826,65** jednostek waluty.",
+      "sql_agenta": [
+        "SELECT g.Name, SUM(il.UnitPrice * il.Quantity) AS TotalRevenue\nFROM Genre g\nJOIN Track t ON g.GenreId = t.GenreId\nJOIN InvoiceLine il ON t.TrackId = il.TrackId\nGROUP BY g.Name\nORDER BY TotalRevenue DESC\nLIMIT 1;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3282,
+      "tokeny_wyjscie": 119
+    },
+    {
+      "id": 14,
+      "poziom": "trudne",
+      "pytanie": "Który pracownik obsługi klienta wygenerował największą sprzedaż przez swoich klientów i ile ona wyniosła?",
+      "oczekiwane": [
+        "Jane Peacock",
+        833.04
+      ],
+      "sql_wzorcowe": "SELECT e.FirstName || ' ' || e.LastName, ROUND(SUM(i.Total), 2) AS s FROM Invoice i JOIN Customer c ON i.CustomerId = c.CustomerId JOIN Employee e ON c.SupportRepId = e.EmployeeId GROUP BY e.EmployeeId ORDER BY s DESC LIMIT 1",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Pracownikiem, który wygenerował największą sprzedaż, jest Jane Peacock. Łączna wartość sprzedaży dokonanej przez jej klientów wyniosła 833,04.",
+      "sql_agenta": [
+        "SELECT e.FirstName, e.LastName, SUM(i.Total) AS TotalSales\nFROM Employee e\nJOIN Customer c ON e.EmployeeId = c.SupportRepId\nJOIN Invoice i ON c.CustomerId = i.CustomerId\nGROUP BY e.EmployeeId\nORDER BY TotalSales DESC\nLIMIT 1;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3288,
+      "tokeny_wyjscie": 122
+    },
+    {
+      "id": 15,
+      "poziom": "trudne",
+      "pytanie": "Ile utworów nie zostało sprzedanych ani razu?",
+      "oczekiwane": [
+        1519
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Track WHERE TrackId NOT IN (SELECT TrackId FROM InvoiceLine)",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Nigdy nie sprzedano 1519 utworów.",
+      "sql_agenta": [
+        "SELECT COUNT(*) FROM Track WHERE TrackId NOT IN (SELECT DISTINCT TrackId FROM InvoiceLine)"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3191,
+      "tokeny_wyjscie": 48
+    },
+    {
+      "id": 16,
+      "poziom": "trudne",
+      "pytanie": "Który artysta przyniósł największy przychód ze sprzedaży swoich utworów i ile on wyniósł?",
+      "oczekiwane": [
+        "Iron Maiden",
+        138.6
+      ],
+      "sql_wzorcowe": "SELECT ar.Name, ROUND(SUM(il.UnitPrice * il.Quantity), 2) AS s FROM InvoiceLine il JOIN Track t ON il.TrackId = t.TrackId JOIN Album al ON t.AlbumId = al.AlbumId JOIN Artist ar ON al.ArtistId = ar.ArtistId GROUP BY ar.ArtistId ORDER BY s DESC LIMIT 1",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Artystą, który przyniósł największy przychód, jest Iron Maiden. Łączna kwota ze sprzedaży jego utworów wyniosła 138,60.",
+      "sql_agenta": [
+        "SELECT Artist.Name, SUM(InvoiceLine.UnitPrice * InvoiceLine.Quantity) as TotalRevenue\nFROM Artist\nJOIN Album ON Artist.ArtistId = Album.ArtistId\nJOIN Track ON Album.AlbumId = Track.AlbumId\nJOIN InvoiceLine ON Track.TrackId = InvoiceLine.TrackId\nGROUP BY Artist.ArtistId\nORDER BY TotalRevenue DESC\nLIMIT 1;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3294,
+      "tokeny_wyjscie": 137
+    },
+    {
+      "id": 17,
+      "poziom": "trudne",
+      "pytanie": "W którym miesiącu i roku łączna wartość faktur była najwyższa i ile wyniosła?",
+      "oczekiwane": [
+        2010,
+        [
+          "stycz",
+          "january",
+          "2010-01",
+          "01.2010",
+          "01/2010"
+        ],
+        52.62
+      ],
+      "sql_wzorcowe": "SELECT strftime('%Y-%m', InvoiceDate), ROUND(SUM(Total), 2) AS s FROM Invoice GROUP BY strftime('%Y-%m', InvoiceDate) ORDER BY s DESC LIMIT 1",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Łączna wartość faktur była najwyższa w styczniu 2010 roku i wyniosła 52,62.",
+      "sql_agenta": [
+        "SELECT strftime('%Y-%m', InvoiceDate) AS MonthYear, SUM(Total) AS TotalSales FROM Invoice GROUP BY MonthYear ORDER BY TotalSales DESC LIMIT 1"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3244,
+      "tokeny_wyjscie": 81
+    },
+    {
+      "id": 18,
+      "poziom": "trudne",
+      "pytanie": "Który pracownik ma najwięcej bezpośrednich podwładnych i ilu?",
+      "oczekiwane": [
+        "Nancy Edwards",
+        3
+      ],
+      "sql_wzorcowe": "SELECT m.FirstName || ' ' || m.LastName, COUNT(*) AS n FROM Employee e JOIN Employee m ON e.ReportsTo = m.EmployeeId GROUP BY m.EmployeeId ORDER BY n DESC LIMIT 1",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Pracownikiem z największą liczbą bezpośrednich podwładnych jest Nancy Edwards, która ma 3 podwładnych.",
+      "sql_agenta": [
+        "SELECT m.FirstName, m.LastName, COUNT(e.EmployeeId) AS SubordinatesCount\nFROM Employee e\nJOIN Employee m ON e.ReportsTo = m.EmployeeId\nGROUP BY m.EmployeeId\nORDER BY SubordinatesCount DESC\nLIMIT 1;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3257,
+      "tokeny_wyjscie": 100
+    },
+    {
+      "id": 19,
+      "poziom": "trudne",
+      "pytanie": "Jaki procent wszystkich utworów nie został sprzedany ani razu? Podaj wynik z dokładnością do dwóch miejsc po przecinku.",
+      "oczekiwane": [
+        43.36
+      ],
+      "sql_wzorcowe": "SELECT ROUND(100.0 * SUM(TrackId NOT IN (SELECT TrackId FROM InvoiceLine)) / COUNT(*), 2) FROM Track",
+      "poprawna": false,
+      "brakuje": [
+        43.36
+      ],
+      "odpowiedz": "Około 40,41% wszystkich utworów nie zostało sprzedanych ani razu.",
+      "sql_agenta": [
+        "SELECT\n  (CAST(SUM(CASE WHEN InvoiceLine.TrackId IS NULL THEN 1 ELSE 0 END) AS FLOAT) / COUNT(Track.TrackId)) * 100 AS PercentNotSold\nFROM Track\nLEFT JOIN InvoiceLine ON Track.TrackId = InvoiceLine.TrackId;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3282,
+      "tokeny_wyjscie": 101
+    },
+    {
+      "id": 20,
+      "poziom": "trudne",
+      "pytanie": "Ilu klientów wydało łącznie więcej, niż wynosi średnia suma wydatków na jednego klienta?",
+      "oczekiwane": [
+        22
+      ],
+      "sql_wzorcowe": "WITH s AS (SELECT CustomerId, SUM(Total) AS t FROM Invoice GROUP BY CustomerId) SELECT COUNT(*) FROM s WHERE t > (SELECT AVG(t) FROM s)",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Łącznie 22 klientów wydało więcej, niż wynosi średnia suma wydatków na jednego klienta.",
+      "sql_agenta": [
+        "WITH CustomerTotals AS (\n    SELECT CustomerId, SUM(Total) as TotalSpent\n    FROM Invoice\n    GROUP BY CustomerId\n),\nAverageSpent AS (\n    SELECT AVG(TotalSpent) as AvgSpent\n    FROM CustomerTotals\n)\nSELECT COUNT(*)\nFROM CustomerTotals\nWHERE TotalSpent > (SELECT AvgSpent FROM AverageSpent)"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3270,
+      "tokeny_wyjscie": 115
+    },
+    {
+      "id": 21,
+      "poziom": "trudne",
+      "pytanie": "Ile utworów z gatunku Rock kupili łącznie klienci z Kanady?",
+      "oczekiwane": [
+        107
+      ],
+      "sql_wzorcowe": "SELECT SUM(il.Quantity) FROM InvoiceLine il JOIN Invoice i ON il.InvoiceId = i.InvoiceId JOIN Customer c ON i.CustomerId = c.CustomerId JOIN Track t ON il.TrackId = t.TrackId JOIN Genre g ON t.GenreId = g.GenreId WHERE g.Name = 'Rock' AND c.Country = 'Canada'",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Klienci z Kanady kupili łącznie 107 utworów z gatunku Rock.",
+      "sql_agenta": [
+        "SELECT COUNT(il.InvoiceLineId)\nFROM InvoiceLine il\nJOIN Invoice i ON il.InvoiceId = i.InvoiceId\nJOIN Customer c ON i.CustomerId = c.CustomerId\nJOIN Track t ON il.TrackId = t.TrackId\nJOIN Genre g ON t.GenreId = g.GenreId\nWHERE c.Country = 'Canada' AND g.Name = 'Rock'"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3274,
+      "tokeny_wyjscie": 121
+    },
+    {
+      "id": 22,
+      "poziom": "trudne",
+      "pytanie": "Ilu różnych wykonawców ma utwory na playliście Grunge?",
+      "oczekiwane": [
+        6
+      ],
+      "sql_wzorcowe": "SELECT COUNT(DISTINCT al.ArtistId) FROM PlaylistTrack pt JOIN Playlist p ON pt.PlaylistId = p.PlaylistId JOIN Track t ON pt.TrackId = t.TrackId JOIN Album al ON t.AlbumId = al.AlbumId WHERE p.Name = 'Grunge'",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Na playliście Grunge znajduje się 6 różnych wykonawców.",
+      "sql_agenta": [
+        "SELECT count(DISTINCT Album.ArtistId) \nFROM Playlist \nJOIN PlaylistTrack ON Playlist.PlaylistId = PlaylistTrack.PlaylistId \nJOIN Track ON PlaylistTrack.TrackId = Track.TrackId \nJOIN Album ON Track.AlbumId = Album.AlbumId \nWHERE Playlist.Name = 'Grunge'"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3255,
+      "tokeny_wyjscie": 98
+    },
+    {
+      "id": 23,
+      "poziom": "nietypowe",
+      "pytanie": "ile jest kliętów z niemiec",
+      "oczekiwane": [
+        4
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Customer WHERE Country = 'Germany'",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "W bazie znajduje się 4 klientów z Niemiec.",
+      "sql_agenta": [
+        "SELECT COUNT(*) FROM Customer WHERE Country = 'Germany'"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3174,
+      "tokeny_wyjscie": 38
+    },
+    {
+      "id": 24,
+      "poziom": "nietypowe",
+      "pytanie": "kto ma wiecej albumow: led zepelin czy deep purpel? podaj ile ma kazdy",
+      "oczekiwane": [
+        "Led Zeppelin",
+        14,
+        "Deep Purple",
+        11
+      ],
+      "sql_wzorcowe": "SELECT ar.Name, COUNT(*) FROM Album al JOIN Artist ar ON al.ArtistId = ar.ArtistId WHERE ar.Name IN ('Led Zeppelin', 'Deep Purple') GROUP BY ar.Name",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Więcej albumów ma Led Zeppelin. Oto szczegółowe zestawienie:\n\n*   **Led Zeppelin**: 14 albumów\n*   **Deep Purple**: 11 albumów",
+      "sql_agenta": [
+        "SELECT Name, COUNT(AlbumId) as AlbumCount \nFROM Artist \nJOIN Album ON Artist.ArtistId = Album.ArtistId \nWHERE Name IN ('Led Zeppelin', 'Deep Purple') \nGROUP BY Name;"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3259,
+      "tokeny_wyjscie": 103
+    },
+    {
+      "id": 25,
+      "poziom": "nietypowe",
+      "pytanie": "ile piosenek jest na plycie big ones aerosmitha",
+      "oczekiwane": [
+        15
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Track t JOIN Album al ON t.AlbumId = al.AlbumId WHERE al.Title = 'Big Ones'",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "Na płycie \"Big Ones\" zespołu Aerosmith znajduje się 15 piosenek.",
+      "sql_agenta": [
+        "SELECT count(*) \nFROM Track \nJOIN Album ON Track.AlbumId = Album.AlbumId \nWHERE Album.Title = 'Big Ones'"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3206,
+      "tokeny_wyjscie": 66
+    },
+    {
+      "id": 26,
+      "poziom": "nietypowe",
+      "pytanie": "How many invoices were issued to customers from Paris?",
+      "oczekiwane": [
+        14
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Invoice i JOIN Customer c ON i.CustomerId = c.CustomerId WHERE c.City = 'Paris'",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "There were 14 invoices issued to customers from Paris.",
+      "sql_agenta": [
+        "SELECT COUNT(*) FROM Invoice WHERE BillingCity = 'Paris'"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3180,
+      "tokeny_wyjscie": 39
+    },
+    {
+      "id": 27,
+      "poziom": "nietypowe",
+      "pytanie": "Ile faktur wystawiono w 2014 roku?",
+      "oczekiwane": [
+        [
+          0,
+          "brak",
+          "nie ma",
+          "żadn",
+          "nie wystawiono",
+          "nie odnotowano"
+        ]
+      ],
+      "sql_wzorcowe": "SELECT COUNT(*) FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2014'",
+      "poprawna": true,
+      "brakuje": [],
+      "odpowiedz": "W 2014 roku nie wystawiono żadnych faktur.",
+      "sql_agenta": [
+        "SELECT count(*) FROM Invoice WHERE strftime('%Y', InvoiceDate) = '2014'"
+      ],
+      "kroki": 1,
+      "bledy_sql": 0,
+      "tokeny_wejscie": 3196,
+      "tokeny_wyjscie": 52
+    }
+  ]
+}

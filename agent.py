@@ -15,15 +15,25 @@ Nowości względem kroku 2:
   - funkcja zapytaj_agenta() zwraca też statystyki (kroki, SQL, tokeny),
     które wykorzystamy w ewaluacji (etap 5) i w okienku czatu (etap 4)
 
+Dwa tryby pracy (przełącznik SCHEMAT_W_PROMPCIE):
+  - False ("narzędzia"): agent sam odkrywa strukturę bazy przez list_tables
+    i describe_table. Działa dla dowolnie dużej bazy, ale wymaga więcej kroków.
+  - True ("schemat"): opis wszystkich tabel trafia od razu do instrukcji
+    systemowej, więc agent może od razu pisać SQL. Szybciej i mniej zapytań,
+    ale ma sens tylko wtedy, gdy schemat jest mały (tu: 11 tabel).
+
 Uruchomienie (w aktywnym środowisku .venv-1):
-    python agent.py
+    python agent.py              # tryb "narzędzia"
+    python agent.py --schemat    # tryb "schemat"
 """
 
 import os
+import re
 import sqlite3
 import sys
 import time
 from contextlib import closing  # gwarantuje zamknięcie połączenia z bazą
+from functools import cache      # zapamiętuje wynik funkcji (liczymy go raz)
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -39,7 +49,11 @@ DB_PATH = Path(__file__).parent / "data" / "chinook.db"
 
 MAX_KROKOW = 10      # ile razy agent może wywołać model, zanim się poddamy
 MAX_WIERSZY = 50     # ile wierszy wyniku SQL maksymalnie oddajemy modelowi
-MAX_PROB_API = 4     # ile razy ponawiamy zapytanie, gdy serwer jest przeciążony
+MAX_PROB_API = 5     # ile razy ponawiamy zapytanie, gdy serwer jest przeciążony
+
+# Tryb pracy agenta (opis na górze pliku). Można go zmienić z zewnątrz,
+# np. w ewaluacji: agent.SCHEMAT_W_PROMPCIE = True
+SCHEMAT_W_PROMPCIE = False
 
 load_dotenv()
 _api_key = os.getenv("GEMINI_API_KEY")
@@ -134,6 +148,30 @@ def run_query(sql: str) -> dict:
     }
 
 
+@cache
+def opis_schematu() -> str:
+    """Opis całej bazy jako tekst do instrukcji systemowej (tryb "schemat").
+
+    Składamy go z tych samych narzędzi, których używa agent, więc opis
+    zawsze zgadza się z prawdziwą bazą. @cache sprawia, że liczymy go
+    tylko raz, a nie przy każdym pytaniu.
+    """
+    linie = []
+    for tabela in list_tables():
+        opis = describe_table(tabela)
+        kolumny = ", ".join(
+            f"{k['name']} {k['type']}{' PK' if k['primary_key'] else ''}"
+            for k in opis["columns"]
+        )
+        linie.append(f"{tabela}({kolumny})")
+        for klucz in opis["foreign_keys"]:
+            linie.append(f"  {tabela}.{klucz['column']} -> {klucz['references']}")
+        if opis["sample_rows"]:
+            # Jeden przykładowy wiersz pokazuje format danych, np. dat czy krajów.
+            linie.append(f"  przykład: {opis['sample_rows'][0]}")
+    return "\n".join(linie)
+
+
 # Mapa: nazwa narzędzia -> funkcja w Pythonie
 NARZEDZIA = {
     "list_tables": list_tables,
@@ -205,34 +243,58 @@ Zasady:
 - Jeśli pytanie nie dotyczy bazy albo baza nie ma takich danych, powiedz to wprost.
 """
 
-KONFIGURACJA = types.GenerateContentConfig(
-    system_instruction=INSTRUKCJA_SYSTEMOWA,
-    tools=[types.Tool(function_declarations=OPISY_NARZEDZI)],
-    automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
-)
+
+
+def _konfiguracja() -> types.GenerateContentConfig:
+    """Buduje konfigurację modelu zależnie od trybu pracy agenta."""
+    instrukcja = INSTRUKCJA_SYSTEMOWA
+    if SCHEMAT_W_PROMPCIE:
+        instrukcja += (
+            "\nSchemat bazy (tabele, kolumny, klucze obce i przykładowy wiersz) masz "
+            "poniżej. Nie wywołuj list_tables ani describe_table, tylko od razu "
+            "pisz zapytanie przez run_query.\n\n" + opis_schematu()
+        )
+    return types.GenerateContentConfig(
+        system_instruction=instrukcja,
+        tools=[types.Tool(function_declarations=OPISY_NARZEDZI)],
+        automatic_function_calling=types.AutomaticFunctionCallingConfig(disable=True),
+    )
 
 
 # =============================================================================
 # Część 3: wywołanie modelu z ponawianiem (retry)
 # =============================================================================
-def _zapytaj_model(historia: list) -> types.GenerateContentResponse:
-    """Wywołuje model. Przy przeciążeniu serwera czeka i próbuje ponownie.
+def _ile_czekac(blad: errors.APIError, proba: int) -> float:
+    """Ile sekund odczekać przed kolejną próbą.
 
-    Odstęp rośnie za każdym razem (2 s, 4 s, 8 s...). To się nazywa
-    "exponential backoff": nie zasypujemy przeciążonego serwera zapytaniami.
+    - 503/500 (serwer przeciążony): odstęp rośnie 2 s, 4 s, 8 s...
+      To się nazywa "exponential backoff".
+    - 429 (przekroczony limit na minutę): kilka sekund to za mało, bo limit
+      odnawia się co minutę. Google zwykle podaje w błędzie, ile czekać
+      ("retry in 27s"), więc korzystamy z tej podpowiedzi.
     """
+    if blad.code == 429:
+        podpowiedz = re.search(r"(?:retryDelay\W+|retry in )(\d+(?:\.\d+)?)s", str(blad))
+        return float(podpowiedz.group(1)) + 1 if podpowiedz else 15 * proba
+    return 2 ** proba
+
+
+def _zapytaj_model(historia: list) -> types.GenerateContentResponse:
+    """Wywołuje model. Przy przeciążeniu lub limicie czeka i próbuje ponownie."""
     for proba in range(1, MAX_PROB_API + 1):
         try:
             return client.models.generate_content(
-                model=MODEL, contents=historia, config=KONFIGURACJA
+                model=MODEL, contents=historia, config=_konfiguracja()
             )
         except errors.APIError as blad:
             # 429 = przekroczony limit, 500/503 = problem po stronie serwera.
             # Inne błędy (np. 400 = złe zapytanie) nie miną od czekania.
             if blad.code not in (429, 500, 503) or proba == MAX_PROB_API:
                 raise
-            czekaj = 2 ** proba
-            print(f"   (serwer zwrócił {blad.code}, ponawiam za {czekaj} s...)")
+            if blad.code == 429 and "PerDay" in str(blad):
+                raise  # limit DZIENNY: czekanie minutę nic nie da
+            czekaj = _ile_czekac(blad, proba)
+            print(f"   (serwer zwrócił {blad.code}, ponawiam za {czekaj:.0f} s...)")
             time.sleep(czekaj)
 
 
@@ -315,7 +377,9 @@ def zapytaj_agenta(pytanie: str, pokazuj_kroki: bool = True) -> dict:
 # Ten blok wykona się tylko przy "python agent.py". Gdy w etapie 5 zrobimy
 # "from agent import zapytaj_agenta", czat się nie uruchomi.
 if __name__ == "__main__":
-    print(f"Agent SQL (model: {MODEL}). Wpisz pytanie albo 'exit', żeby wyjść.\n")
+    SCHEMAT_W_PROMPCIE = "--schemat" in sys.argv
+    tryb = "schemat" if SCHEMAT_W_PROMPCIE else "narzędzia"
+    print(f"Agent SQL (model: {MODEL}, tryb: {tryb}). Wpisz pytanie albo 'exit', żeby wyjść.\n")
     while True:
         try:
             pytanie = input("Ty: ").strip()

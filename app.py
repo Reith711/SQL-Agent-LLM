@@ -16,6 +16,7 @@ import pandas as pd
 import streamlit as st
 from google.genai import errors
 
+import agent
 from agent import MODEL, zapytaj_agenta
 
 PRZYKLADOWE_PYTANIA = [
@@ -53,6 +54,12 @@ with st.sidebar:
             st.session_state.oczekujace = pytanie
 
     st.divider()
+    # Przełącznik trybu. Streamlit uruchamia plik od nowa przy każdej akcji,
+    # więc ustawienie agenta odświeża się zgodnie z położeniem przełącznika.
+    agent.SCHEMAT_W_PROMPCIE = st.toggle(
+        "Tryb szybki (schemat bazy w prompcie)",
+        help="Agent dostaje opis tabel od razu, zamiast odkrywać je narzędziami.",
+    )
     st.caption(f"Model: `{MODEL}`")
     if st.button("Wyczyść rozmowę", use_container_width=True):
         st.session_state.wiadomosci = []
