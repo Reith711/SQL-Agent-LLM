@@ -9,7 +9,10 @@ bazę, pisze zapytanie SQL, wykonuje je, poprawia, jeśli rzuci błąd, i odpowi
 Zbudowany w Pythonie na Gemini API z użyciem **tool calling** i własnej pętli agenta
 (bez frameworka), dzięki czemu każdy krok rozumowania agenta jest widoczny i testowalny.
 
-> GIF z demo: *wkrótce*
+![Demo: pytania do agenta w okienku czatu](docs/demo.gif)
+
+*Okienko czatu w trybie szybkim. Pod każdą odpowiedzią można rozwinąć kroki agenta:
+napisane przez niego zapytanie SQL i wynik tego zapytania.*
 
 ## Najważniejsze cechy
 

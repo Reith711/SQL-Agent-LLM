@@ -9,7 +9,10 @@ the database, writes the SQL query, runs it, fixes it if it fails, and answers i
 Built with Python and the Gemini API using **tool calling** and a hand-written agent loop
 (no agent framework), so every step of the agent's reasoning is visible and testable.
 
-> Demo GIF: *coming soon*
+![Demo: asking the agent business questions in the chat UI](docs/demo.gif)
+
+*Chat UI (in Polish) in fast mode. Under each answer you can expand the agent's steps:
+the SQL it wrote and the query result.*
 
 ## Highlights
 
